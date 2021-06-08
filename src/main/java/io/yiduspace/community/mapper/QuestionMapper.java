@@ -3,6 +3,10 @@ package io.yiduspace.community.mapper;
 import io.yiduspace.community.model.Question;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 @Mapper
 public interface QuestionMapper {
@@ -12,4 +16,11 @@ public interface QuestionMapper {
             "#{description},#{gmtCreate},#{gmtModified},#{creator},#{commentCount}," +
             "#{viewCount},#{likeCount},#{tag})")
     void insertQuestion(Question question);
+
+    @Select("select * from question limit #{offset},#{pageSize}")
+    List<Question> getQuestionList(@Param("offset") int offset, @Param("pageSize") int pageSize);
+
+    @Select("select count(1) from question")
+    int getTotalCount();
+
 }
