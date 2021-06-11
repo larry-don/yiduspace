@@ -1,27 +1,39 @@
 package io.yiduspace.community.controller;
 
-import io.yiduspace.community.mapper.QuestionMapper;
-import io.yiduspace.community.mapper.UserMapper;
+import io.yiduspace.community.dto.QuestionDTO;
 import io.yiduspace.community.model.Question;
 import io.yiduspace.community.model.User;
+import io.yiduspace.community.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 @Controller
 public class PublishController {
 
     @Autowired
-    private QuestionMapper questionMapper;
+    private QuestionService questionService;
 
     @GetMapping("/publish")
     public String publish() {
+        return "publish";
+    }
+
+    @GetMapping("/publish/{id}")
+    public String publish(@PathVariable("id") Long id, Model model){
+        QuestionDTO questionDTO = questionService.getQuestionById(id);
+        if(questionDTO != null){
+            model.addAttribute("title",questionDTO.getTitle());
+            model.addAttribute("description",questionDTO.getDescription());
+            model.addAttribute("tag",questionDTO.getTag());
+            model.addAttribute("id",id);
+        }
         return "publish";
     }
 
@@ -29,6 +41,7 @@ public class PublishController {
     public String publish(@RequestParam(value = "title", required = false) String title,
                           @RequestParam(value = "description", required = false) String description,
                           @RequestParam(value = "tag", required = false) String tag,
+                          @RequestParam(value = "id",required = false) Long id,
                           Model model, HttpServletRequest request) {
         model.addAttribute("title",title);
         model.addAttribute("description",description);
@@ -50,14 +63,16 @@ public class PublishController {
             model.addAttribute("error","请登录后再发布问题");
             return "publish";
         }
+
         Question question = new Question();
         question.setTitle(title);
         question.setDescription(description);
-        question.setGmtCreate(System.currentTimeMillis());
-        question.setGmtModified(question.getGmtCreate());
-        question.setCreator(user.getId());
         question.setTag(tag);
-        questionMapper.insertQuestion(question);
+        question.setCreator(user.getId());
+        if(id != null){
+            question.setId(id);
+        }
+        questionService.createOrUpdateQuestion(question);
         return "redirect:/";
     }
 }

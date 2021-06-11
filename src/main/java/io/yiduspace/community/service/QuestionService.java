@@ -38,7 +38,7 @@ public class QuestionService {
         return questionDTOLists;
     }
 
-    public List<QuestionDTO> getQuestionList(int currentPage, int pageSize,int userId) {
+    public List<QuestionDTO> getQuestionList(int currentPage, int pageSize,long userId) {
         int offset = (currentPage - 1)*pageSize;
         List<QuestionDTO> questionDTOLists = new ArrayList<>();
         List<Question> lists = questionMapper.getQuestionListByUserId(offset,pageSize,userId);
@@ -118,7 +118,7 @@ public class QuestionService {
         return paginationDTO;
     }
 
-    public PaginationDTO getPaginationDTO(int currentPage, int pageSize,int userId) {
+    public PaginationDTO getPaginationDTO(int currentPage, int pageSize,long userId) {
         PaginationDTO paginationDTO = new PaginationDTO();
         int totalCount = questionMapper.getTotalCountByUserId(userId);//问题总记录数
         int totalPage = totalCount % pageSize == 0 ? totalCount/pageSize:totalCount/pageSize+1;//总分页数
@@ -183,4 +183,28 @@ public class QuestionService {
         return paginationDTO;
     }
 
+    public QuestionDTO getQuestionById(long questionId) {
+        QuestionDTO questionDTO = new QuestionDTO();
+        Question question = questionMapper.getQuestionById(questionId);
+        BeanUtils.copyProperties(question,questionDTO);
+        User user = userMapper.getUserById(question.getCreator());
+        questionDTO.setUser(user);
+        return questionDTO;
+    }
+
+    public void createOrUpdateQuestion(Question question) {
+        if(question.getId() == null){
+            //插入
+            question.setGmtCreate(System.currentTimeMillis());
+            question.setGmtModified(question.getGmtCreate());
+            questionMapper.insertQuestion(question);
+        }else{
+            Question dbQuestion = questionMapper.getQuestionById(question.getId());
+            if(dbQuestion != null){
+                //更新
+                question.setGmtModified(System.currentTimeMillis());
+                questionMapper.updateQuestionById(question);
+            }
+        }
+    }
 }

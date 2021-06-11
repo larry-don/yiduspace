@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 @Controller
@@ -42,7 +41,7 @@ public class ProfileController {
             model.addAttribute("sectionName","最新回复");
         }
 
-        Integer id = user.getId();
+        long id = user.getId();
         PaginationDTO paginationDTO = questionService.getPaginationDTO(currentPage,pageSize, id);
         model.addAttribute("paginationDTO",paginationDTO);
         return "profile";
