@@ -2,6 +2,7 @@ package io.yiduspace.community.interceptor;
 
 import io.yiduspace.community.mapper.UserMapper;
 import io.yiduspace.community.model.User;
+import io.yiduspace.community.model.UserExample;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -10,6 +11,7 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 @Service
 public class LoginInterceptor implements HandlerInterceptor {
@@ -24,9 +26,11 @@ public class LoginInterceptor implements HandlerInterceptor {
             for (Cookie cookie : cookies) {
                 if(cookie.getName().equals("token")){
                     String token = cookie.getValue();
-                    User user = userMapper.getUserByToken(token);
-                    if(user != null){
-                        request.getSession().setAttribute("user",user);
+                    UserExample example = new UserExample();
+                    example.createCriteria().andTokenEqualTo(token);
+                    List<User> list = userMapper.selectByExample(example);
+                    if(list.size() != 0){
+                        request.getSession().setAttribute("user",list.get(0));
                     }
                     break;
                 }

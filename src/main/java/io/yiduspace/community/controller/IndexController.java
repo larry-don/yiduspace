@@ -20,7 +20,7 @@ public class IndexController {
     public String index(HttpServletRequest request, Model model,
                         @RequestParam(value = "currentPage",defaultValue = "1") Integer currentPage,
                         @RequestParam(value = "pageSize",defaultValue = "3") Integer pageSize) {
-        PaginationDTO paginationDTO = questionService.getPaginationDTO(currentPage,pageSize);
+        PaginationDTO paginationDTO = questionService.getPaginationDTO(currentPage,pageSize,null);
         model.addAttribute("paginationDTO",paginationDTO);
         return "index";
     }

@@ -5,7 +5,9 @@ import io.yiduspace.community.dto.QuestionDTO;
 import io.yiduspace.community.mapper.QuestionMapper;
 import io.yiduspace.community.mapper.UserMapper;
 import io.yiduspace.community.model.Question;
+import io.yiduspace.community.model.QuestionExample;
 import io.yiduspace.community.model.User;
+import org.apache.ibatis.session.RowBounds;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,103 +26,43 @@ public class QuestionService {
 
 
     //获取问题列表
-    public List<QuestionDTO> getQuestionList(int currentPage, int pageSize) {
+    public List<QuestionDTO> getQuestionList(int currentPage, int pageSize,Long userId) {
         int offset = (currentPage - 1)*pageSize;
         List<QuestionDTO> questionDTOLists = new ArrayList<>();
-        List<Question> lists = questionMapper.getQuestionList(offset,pageSize);
-        for (Question list : lists) {
-            QuestionDTO questionDTO = new QuestionDTO();
-            BeanUtils.copyProperties(list,questionDTO);
-            User user = userMapper.getUserById(list.getCreator());
-            questionDTO.setUser(user);
-            questionDTOLists.add(questionDTO);
+        List<Question> lists = null;
+        if(userId == null){
+            lists = questionMapper.selectByExampleWithRowbounds(new QuestionExample(), new RowBounds(currentPage,pageSize));
+        }else{
+            QuestionExample example = new QuestionExample();
+            example.createCriteria().andIdEqualTo(userId);
+            lists = questionMapper.selectByExampleWithBLOBsWithRowbounds(example,new RowBounds(currentPage,pageSize));
+        }
+        if(lists != null){
+            for (Question list : lists) {
+                QuestionDTO questionDTO = new QuestionDTO();
+                BeanUtils.copyProperties(list,questionDTO);
+                User user = userMapper.selectByPrimaryKey(list.getCreator());
+                questionDTO.setUser(user);
+                questionDTOLists.add(questionDTO);
+            }
         }
         return questionDTOLists;
     }
 
-    public List<QuestionDTO> getQuestionList(int currentPage, int pageSize,long userId) {
-        int offset = (currentPage - 1)*pageSize;
-        List<QuestionDTO> questionDTOLists = new ArrayList<>();
-        List<Question> lists = questionMapper.getQuestionListByUserId(offset,pageSize,userId);
-        for (Question list : lists) {
-            QuestionDTO questionDTO = new QuestionDTO();
-            BeanUtils.copyProperties(list,questionDTO);
-            User user = userMapper.getUserById(list.getCreator());
-            questionDTO.setUser(user);
-            questionDTOLists.add(questionDTO);
-        }
-        return questionDTOLists;
-    }
+
 
     //获取分页对象
-    public PaginationDTO getPaginationDTO(int currentPage, int pageSize) {
+    public PaginationDTO getPaginationDTO(int currentPage, int pageSize,Long userId) {
         PaginationDTO paginationDTO = new PaginationDTO();
-        int totalCount = questionMapper.getTotalCount();//问题总记录数
-        int totalPage = totalCount % pageSize == 0 ? totalCount/pageSize:totalCount/pageSize+1;//总分页数
-        boolean firstPage,endPage,prePage,nextPge;
-        List<Integer> pageList = new ArrayList<>();//页码列表
-        //请求页码的容错处理
-        if(currentPage < 1){
-            currentPage = 1;
-        }
-        if(currentPage > totalPage){
-            currentPage = totalPage;
-        }
-        paginationDTO.setCurrentPage(currentPage);
-        paginationDTO.setTotalPage(totalPage);
-        //是否显示首页按钮
-        if(currentPage > 1){
-            firstPage = true;
+        int totalCount;
+        if(userId == null){
+            totalCount = (int) questionMapper.countByExample(new QuestionExample());//问题总记录数
         }else{
-            firstPage = false;
+            QuestionExample example = new QuestionExample();
+            example.createCriteria().andIdEqualTo(userId);
+            totalCount = (int)questionMapper.countByExample(example);//问题总记录数
         }
 
-        //是否显示尾页按钮
-        if(currentPage < totalPage){
-            endPage = true;
-        }else{
-            endPage = false;
-        }
-
-        //是否显示上一页
-        if(currentPage - 1 > 0){
-            prePage = true;
-        }else{
-            prePage = false;
-        }
-
-        //是否显示下一页
-        if(totalPage - currentPage > 0){
-            nextPge = true;
-        }else{
-            nextPge = false;
-        }
-
-        //添加页码列表
-        pageList.add(currentPage);
-        for (int i = 1; i <= 3 ; i++) {
-            if(currentPage - i > 0){
-                pageList.add(0,currentPage - i);
-            }
-            if(currentPage + i <= totalPage){
-                pageList.add(currentPage+i);
-            }
-        }
-
-        paginationDTO.setFirstPage(firstPage);
-        paginationDTO.setEndPage(endPage);
-        paginationDTO.setPrePage(prePage);
-        paginationDTO.setNextPage(nextPge);
-        paginationDTO.setPageList(pageList);
-        List<QuestionDTO> questionDTOS = getQuestionList(currentPage,pageSize);
-        paginationDTO.setQuestionDTOS(questionDTOS);
-
-        return paginationDTO;
-    }
-
-    public PaginationDTO getPaginationDTO(int currentPage, int pageSize,long userId) {
-        PaginationDTO paginationDTO = new PaginationDTO();
-        int totalCount = questionMapper.getTotalCountByUserId(userId);//问题总记录数
         int totalPage = totalCount % pageSize == 0 ? totalCount/pageSize:totalCount/pageSize+1;//总分页数
         boolean firstPage,endPage,prePage,nextPge;
         List<Integer> pageList = new ArrayList<>();//页码列表
@@ -183,11 +125,12 @@ public class QuestionService {
         return paginationDTO;
     }
 
+
     public QuestionDTO getQuestionById(long questionId) {
         QuestionDTO questionDTO = new QuestionDTO();
-        Question question = questionMapper.getQuestionById(questionId);
+        Question question = questionMapper.selectByPrimaryKey(questionId);
         BeanUtils.copyProperties(question,questionDTO);
-        User user = userMapper.getUserById(question.getCreator());
+        User user = userMapper.selectByPrimaryKey(question.getCreator());
         questionDTO.setUser(user);
         return questionDTO;
     }
@@ -197,13 +140,15 @@ public class QuestionService {
             //插入
             question.setGmtCreate(System.currentTimeMillis());
             question.setGmtModified(question.getGmtCreate());
-            questionMapper.insertQuestion(question);
+            questionMapper.insert(question);
         }else{
-            Question dbQuestion = questionMapper.getQuestionById(question.getId());
+            Question dbQuestion = questionMapper.selectByPrimaryKey(question.getId());
             if(dbQuestion != null){
                 //更新
                 question.setGmtModified(System.currentTimeMillis());
-                questionMapper.updateQuestionById(question);
+                QuestionExample example = new QuestionExample();
+                example.createCriteria().andIdEqualTo(question.getId());
+                questionMapper.updateByExample(question, example);
             }
         }
     }
