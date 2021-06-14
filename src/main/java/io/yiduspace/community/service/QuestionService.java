@@ -2,11 +2,14 @@ package io.yiduspace.community.service;
 
 import io.yiduspace.community.dto.PaginationDTO;
 import io.yiduspace.community.dto.QuestionDTO;
+import io.yiduspace.community.exception.CustomizeErrorCode;
+import io.yiduspace.community.exception.CustomizeException;
 import io.yiduspace.community.mapper.QuestionMapper;
 import io.yiduspace.community.mapper.UserMapper;
 import io.yiduspace.community.model.Question;
 import io.yiduspace.community.model.QuestionExample;
 import io.yiduspace.community.model.User;
+import io.yiduspace.community.util.BeanUtilsCopyIgnoreNull;
 import org.apache.ibatis.session.RowBounds;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,21 +29,20 @@ public class QuestionService {
 
 
     //获取问题列表
-    public List<QuestionDTO> getQuestionList(int currentPage, int pageSize,Long userId) {
-        int offset = (currentPage - 1)*pageSize;
+    public List<QuestionDTO> getQuestionList(int offset, int limit,Long userId) {
         List<QuestionDTO> questionDTOLists = new ArrayList<>();
         List<Question> lists = null;
         if(userId == null){
-            lists = questionMapper.selectByExampleWithRowbounds(new QuestionExample(), new RowBounds(currentPage,pageSize));
+            lists = questionMapper.selectByExampleWithRowbounds(new QuestionExample(), new RowBounds(offset,limit));
         }else{
             QuestionExample example = new QuestionExample();
-            example.createCriteria().andIdEqualTo(userId);
-            lists = questionMapper.selectByExampleWithBLOBsWithRowbounds(example,new RowBounds(currentPage,pageSize));
+            example.createCriteria().andCreatorEqualTo(userId);
+            lists = questionMapper.selectByExampleWithRowbounds(example,new RowBounds(offset,limit));
         }
         if(lists != null){
             for (Question list : lists) {
                 QuestionDTO questionDTO = new QuestionDTO();
-                BeanUtils.copyProperties(list,questionDTO);
+                BeanUtils.copyProperties(list,questionDTO, BeanUtilsCopyIgnoreNull.getNullPropertyNames(list));
                 User user = userMapper.selectByPrimaryKey(list.getCreator());
                 questionDTO.setUser(user);
                 questionDTOLists.add(questionDTO);
@@ -119,7 +121,8 @@ public class QuestionService {
         paginationDTO.setPrePage(prePage);
         paginationDTO.setNextPage(nextPge);
         paginationDTO.setPageList(pageList);
-        List<QuestionDTO> questionDTOS = getQuestionList(currentPage,pageSize,userId);
+        int offset = (currentPage - 1) * pageSize;
+        List<QuestionDTO> questionDTOS = getQuestionList(offset,pageSize,userId);
         paginationDTO.setQuestionDTOS(questionDTOS);
 
         return paginationDTO;
@@ -129,7 +132,10 @@ public class QuestionService {
     public QuestionDTO getQuestionById(long questionId) {
         QuestionDTO questionDTO = new QuestionDTO();
         Question question = questionMapper.selectByPrimaryKey(questionId);
-        BeanUtils.copyProperties(question,questionDTO);
+        if(question == null){
+            throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
+        }
+        BeanUtils.copyProperties(question,questionDTO,BeanUtilsCopyIgnoreNull.getNullPropertyNames(question));
         User user = userMapper.selectByPrimaryKey(question.getCreator());
         questionDTO.setUser(user);
         return questionDTO;
@@ -143,13 +149,15 @@ public class QuestionService {
             questionMapper.insert(question);
         }else{
             Question dbQuestion = questionMapper.selectByPrimaryKey(question.getId());
-            if(dbQuestion != null){
+            if(dbQuestion == null){
+                throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
+            }
                 //更新
                 question.setGmtModified(System.currentTimeMillis());
                 QuestionExample example = new QuestionExample();
                 example.createCriteria().andIdEqualTo(question.getId());
                 questionMapper.updateByExample(question, example);
-            }
+
         }
     }
 }
