@@ -61,7 +61,7 @@ public class QuestionService {
             totalCount = (int) questionMapper.countByExample(new QuestionExample());//问题总记录数
         }else{
             QuestionExample example = new QuestionExample();
-            example.createCriteria().andIdEqualTo(userId);
+            example.createCriteria().andCreatorEqualTo(userId);
             totalCount = (int)questionMapper.countByExample(example);//问题总记录数
         }
 
