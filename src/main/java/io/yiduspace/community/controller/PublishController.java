@@ -69,6 +69,9 @@ public class PublishController {
         question.setDescription(description);
         question.setTag(tag);
         question.setCreator(user.getId());
+        question.setViewCount(0);
+        question.setLikeCount(0);
+        question.setCommentCount(0);
         if(id != null){
             question.setId(id);
         }
