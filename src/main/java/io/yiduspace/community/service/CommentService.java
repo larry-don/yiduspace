@@ -11,6 +11,8 @@ import io.yiduspace.community.model.Question;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
+
 @Service
 public class CommentService {
 
@@ -21,6 +23,7 @@ public class CommentService {
     @Autowired
     private QuestionExtMapper questionExtMapper;
 
+    @Transactional
     public void insert(Comment comment) {
         //parentId校验
         if(comment.getParentId() == null || comment.getParentId() <= 0){
