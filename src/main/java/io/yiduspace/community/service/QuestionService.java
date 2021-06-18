@@ -137,6 +137,8 @@ public class QuestionService {
         if (question == null) {
             throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
         }
+        question.setViewCount(1);
+        questionExtMapper.incViewCount(question);
         BeanUtils.copyProperties(question, questionDTO, BeanUtilsCopyIgnoreNull.getNullPropertyNames(question));
         User user = userMapper.selectByPrimaryKey(question.getCreator());
         questionDTO.setUser(user);
@@ -163,7 +165,4 @@ public class QuestionService {
         }
     }
 
-    public void incViewCount(Long questionId) {
-        questionExtMapper.incViewCount(questionId);
-    }
 }

@@ -1,17 +1,23 @@
 package io.yiduspace.community.service;
 
+import io.yiduspace.community.dto.CommentDTO;
 import io.yiduspace.community.enums.CommentTypeEnum;
 import io.yiduspace.community.exception.CustomizeErrorCode;
 import io.yiduspace.community.exception.CustomizeException;
 import io.yiduspace.community.mapper.CommentMapper;
 import io.yiduspace.community.mapper.QuestionExtMapper;
 import io.yiduspace.community.mapper.QuestionMapper;
-import io.yiduspace.community.model.Comment;
-import io.yiduspace.community.model.Question;
+import io.yiduspace.community.mapper.UserMapper;
+import io.yiduspace.community.model.*;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CommentService {
@@ -22,6 +28,8 @@ public class CommentService {
     private CommentMapper commentMapper;
     @Autowired
     private QuestionExtMapper questionExtMapper;
+    @Autowired
+    private UserMapper userMapper;
 
     @Transactional
     public void insert(Comment comment) {
@@ -42,7 +50,8 @@ public class CommentService {
                 throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
             }
             commentMapper.insert(comment);
-            questionExtMapper.incCommentCount(comment.getParentId());
+            dbQuestion.setCommentCount(1);
+            questionExtMapper.incCommentCount(dbQuestion);
         }else{
             //回复评论
             //进一步校验评论是否存在
@@ -52,5 +61,36 @@ public class CommentService {
             }
             commentMapper.insert(comment);
         }
+    }
+
+    public List<CommentDTO> getCommentById(Long questionId) {
+        //获取评论列表
+        CommentExample example = new CommentExample();
+        example.createCriteria().andParentIdEqualTo(questionId).andTypeEqualTo(CommentTypeEnum.QUESTION.getType());
+        //评论倒序取出
+        example.setOrderByClause("gmt_create desc");
+        List<Comment> comments = commentMapper.selectByExample(example);
+
+        if(comments.size() == 0){
+            return new ArrayList<>();
+        }
+
+        //获取去重的评论人
+        List<Long> commnetators = comments.stream().map(comment -> comment.getCommentator()).distinct().collect(Collectors.toList());
+
+        //将评论人封装成map
+        UserExample example1 = new UserExample();
+        example1.createCriteria().andIdIn(commnetators);
+        List<User> users = userMapper.selectByExample(example1);
+        Map<Long, User> userMap = users.stream().collect(Collectors.toMap(user -> user.getId(), user -> user));
+
+        //将Comment封装成CommentDTO
+        List<CommentDTO> commentDTOList = comments.stream().map(comment -> {
+            CommentDTO commentDTO = new CommentDTO();
+            BeanUtils.copyProperties(comment, commentDTO);
+            commentDTO.setUser(userMap.get(comment.getCommentator()));
+            return commentDTO;
+        }).collect(Collectors.toList());
+        return commentDTOList;
     }
 }
