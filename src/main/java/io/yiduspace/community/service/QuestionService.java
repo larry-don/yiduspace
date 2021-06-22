@@ -37,7 +37,7 @@ public class QuestionService {
     //获取问题列表
     public List<QuestionDTO> getQuestionList(int offset, int limit, Long userId) {
         List<QuestionDTO> questionDTOLists = new ArrayList<>();
-        List<io.yiduspace.community.model.Question> lists = null;
+        List<Question> lists = null;
         if (userId == null) {
             lists = questionMapper.selectByExampleWithRowbounds(new QuestionExample(), new RowBounds(offset, limit));
         } else {
@@ -46,7 +46,7 @@ public class QuestionService {
             lists = questionMapper.selectByExampleWithRowbounds(example, new RowBounds(offset, limit));
         }
         if (lists != null) {
-            for (io.yiduspace.community.model.Question list : lists) {
+            for (Question list : lists) {
                 QuestionDTO questionDTO = new QuestionDTO();
                 BeanUtils.copyProperties(list, questionDTO, BeanUtilsCopyIgnoreNull.getNullPropertyNames(list));
                 User user = userMapper.selectByPrimaryKey(list.getCreator());
@@ -136,7 +136,7 @@ public class QuestionService {
 
     public QuestionDTO getQuestionById(long questionId) {
         QuestionDTO questionDTO = new QuestionDTO();
-        io.yiduspace.community.model.Question question = questionMapper.selectByPrimaryKey(questionId);
+        Question question = questionMapper.selectByPrimaryKey(questionId);
         if (question == null) {
             throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
         }
@@ -148,14 +148,14 @@ public class QuestionService {
         return questionDTO;
     }
 
-    public void createOrUpdateQuestion(io.yiduspace.community.model.Question question) {
+    public void createOrUpdateQuestion(Question question) {
         if (question.getId() == null) {
             //插入
             question.setGmtCreate(System.currentTimeMillis());
             question.setGmtModified(question.getGmtCreate());
             questionMapper.insert(question);
         } else {
-            io.yiduspace.community.model.Question dbQuestion = questionMapper.selectByPrimaryKey(question.getId());
+            Question dbQuestion = questionMapper.selectByPrimaryKey(question.getId());
             if (dbQuestion == null) {
                 throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
             }
