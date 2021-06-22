@@ -2,6 +2,8 @@ package io.yiduspace.community.controller;
 
 import io.yiduspace.community.dto.CommentDTO;
 import io.yiduspace.community.dto.QuestionDTO;
+import io.yiduspace.community.enums.CommentTypeEnum;
+import io.yiduspace.community.model.Question;
 import io.yiduspace.community.service.CommentService;
 import io.yiduspace.community.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +25,11 @@ public class QuestionController {
     @GetMapping("question/{questionId}")
     public String question(@PathVariable("questionId") Long questionId, Model model){
         QuestionDTO questionDTO = questionService.getQuestionById(questionId);
-        List<CommentDTO> list = commentService.getCommentById(questionId);
+        List<CommentDTO> list = commentService.getCommentById(questionId, CommentTypeEnum.QUESTION);
+        List<Question> relatedQuestion = questionService.selectRelated(questionDTO);
         model.addAttribute("questionDTO",questionDTO);
         model.addAttribute("comments",list);
+        model.addAttribute("relatedQuestion",relatedQuestion);
         return "question";
     }
 }

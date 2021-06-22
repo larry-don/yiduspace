@@ -11,13 +11,16 @@ import io.yiduspace.community.model.Question;
 import io.yiduspace.community.model.QuestionExample;
 import io.yiduspace.community.model.User;
 import io.yiduspace.community.util.BeanUtilsCopyIgnoreNull;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.RowBounds;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class QuestionService {
@@ -34,7 +37,7 @@ public class QuestionService {
     //获取问题列表
     public List<QuestionDTO> getQuestionList(int offset, int limit, Long userId) {
         List<QuestionDTO> questionDTOLists = new ArrayList<>();
-        List<Question> lists = null;
+        List<io.yiduspace.community.model.Question> lists = null;
         if (userId == null) {
             lists = questionMapper.selectByExampleWithRowbounds(new QuestionExample(), new RowBounds(offset, limit));
         } else {
@@ -43,7 +46,7 @@ public class QuestionService {
             lists = questionMapper.selectByExampleWithRowbounds(example, new RowBounds(offset, limit));
         }
         if (lists != null) {
-            for (Question list : lists) {
+            for (io.yiduspace.community.model.Question list : lists) {
                 QuestionDTO questionDTO = new QuestionDTO();
                 BeanUtils.copyProperties(list, questionDTO, BeanUtilsCopyIgnoreNull.getNullPropertyNames(list));
                 User user = userMapper.selectByPrimaryKey(list.getCreator());
@@ -133,7 +136,7 @@ public class QuestionService {
 
     public QuestionDTO getQuestionById(long questionId) {
         QuestionDTO questionDTO = new QuestionDTO();
-        Question question = questionMapper.selectByPrimaryKey(questionId);
+        io.yiduspace.community.model.Question question = questionMapper.selectByPrimaryKey(questionId);
         if (question == null) {
             throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
         }
@@ -145,14 +148,14 @@ public class QuestionService {
         return questionDTO;
     }
 
-    public void createOrUpdateQuestion(Question question) {
+    public void createOrUpdateQuestion(io.yiduspace.community.model.Question question) {
         if (question.getId() == null) {
             //插入
             question.setGmtCreate(System.currentTimeMillis());
             question.setGmtModified(question.getGmtCreate());
             questionMapper.insert(question);
         } else {
-            Question dbQuestion = questionMapper.selectByPrimaryKey(question.getId());
+            io.yiduspace.community.model.Question dbQuestion = questionMapper.selectByPrimaryKey(question.getId());
             if (dbQuestion == null) {
                 throw new CustomizeException(CustomizeErrorCode.QUESTION_NOT_FOUND);
             }
@@ -165,4 +168,18 @@ public class QuestionService {
         }
     }
 
+
+    public List<Question> selectRelated(QuestionDTO questionDTO) {
+        if(StringUtils.isBlank(questionDTO.getTag())){
+            return new ArrayList<>();
+        }
+        //将tag用，分隔并用|拼接，用于正则查询
+        String[] strings = StringUtils.split(questionDTO.getTag(), ',');
+        String regexpTag = Arrays.stream(strings).collect(Collectors.joining("|"));
+        Question question = new Question();
+        question.setId(questionDTO.getId());
+        question.setTag(regexpTag);
+        List<Question> list = questionExtMapper.selectRelated(question);
+        return list;
+    }
 }

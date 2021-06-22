@@ -4,10 +4,7 @@ import io.yiduspace.community.dto.CommentDTO;
 import io.yiduspace.community.enums.CommentTypeEnum;
 import io.yiduspace.community.exception.CustomizeErrorCode;
 import io.yiduspace.community.exception.CustomizeException;
-import io.yiduspace.community.mapper.CommentMapper;
-import io.yiduspace.community.mapper.QuestionExtMapper;
-import io.yiduspace.community.mapper.QuestionMapper;
-import io.yiduspace.community.mapper.UserMapper;
+import io.yiduspace.community.mapper.*;
 import io.yiduspace.community.model.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +27,8 @@ public class CommentService {
     private QuestionExtMapper questionExtMapper;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private CommentExtMapper commentExtMapper;
 
     @Transactional
     public void insert(Comment comment) {
@@ -60,13 +59,15 @@ public class CommentService {
                 throw new CustomizeException(CustomizeErrorCode.COMMENT_NOT_FOUND);
             }
             commentMapper.insert(comment);
+            dbComment.setCommentCount(1);
+            commentExtMapper.incCommentCount(dbComment);
         }
     }
 
-    public List<CommentDTO> getCommentById(Long questionId) {
+    public List<CommentDTO> getCommentById(Long id, CommentTypeEnum commentTypeEnum) {
         //获取评论列表
         CommentExample example = new CommentExample();
-        example.createCriteria().andParentIdEqualTo(questionId).andTypeEqualTo(CommentTypeEnum.QUESTION.getType());
+        example.createCriteria().andParentIdEqualTo(id).andTypeEqualTo(commentTypeEnum.getType());
         //评论倒序取出
         example.setOrderByClause("gmt_create desc");
         List<Comment> comments = commentMapper.selectByExample(example);

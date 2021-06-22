@@ -1,7 +1,6 @@
 package io.yiduspace.community.controller;
 
 import io.yiduspace.community.dto.QuestionDTO;
-import io.yiduspace.community.model.Question;
 import io.yiduspace.community.model.User;
 import io.yiduspace.community.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +63,7 @@ public class PublishController {
             return "publish";
         }
 
-        Question question = new Question();
+        io.yiduspace.community.model.Question question = new io.yiduspace.community.model.Question();
         question.setTitle(title);
         question.setDescription(description);
         question.setTag(tag);

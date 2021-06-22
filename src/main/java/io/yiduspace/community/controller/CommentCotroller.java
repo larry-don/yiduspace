@@ -1,7 +1,9 @@
 package io.yiduspace.community.controller;
 
 import io.yiduspace.community.dto.CommentCreateDTO;
+import io.yiduspace.community.dto.CommentDTO;
 import io.yiduspace.community.dto.ResultDTO;
+import io.yiduspace.community.enums.CommentTypeEnum;
 import io.yiduspace.community.exception.CustomizeErrorCode;
 import io.yiduspace.community.model.Comment;
 import io.yiduspace.community.model.User;
@@ -9,11 +11,10 @@ import io.yiduspace.community.service.CommentService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 @Controller
 public class CommentCotroller {
@@ -40,8 +41,16 @@ public class CommentCotroller {
         comment.setGmtCreate(System.currentTimeMillis());
         comment.setGmtModified(comment.getGmtCreate());
         comment.setLikeCount(0);
+        comment.setCommentCount(0);
         comment.setCommentator(user.getId());
         commentService.insert(comment);
         return ResultDTO.okOf();
+    }
+
+    @ResponseBody
+    @GetMapping("/comment/{commentId}")
+    public ResultDTO<List<CommentDTO>> comment(@PathVariable("commentId") Long commentId){
+        List<CommentDTO> list = commentService.getCommentById(commentId, CommentTypeEnum.COMMENT);
+        return ResultDTO.okOf(list);
     }
 }
