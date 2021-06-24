@@ -18,7 +18,8 @@
             <h2><span th:text="${sectionName}"></span></h2>
             <hr>
 
-            <div class="media" th:each="question : ${paginationDTO.questionDTOS}">
+            <!--如果是我的提问，则显示下面内容-->
+            <div class="media" th:each="question : ${paginationDTO.data}" th:if="${section.equals('questions')}">
                 <div class="media-left">
                     <a href="#">
                         <img class="media-object img-rounded"
@@ -40,6 +41,22 @@
                     </span>
                 </div>
             </div>
+
+            <!--如果是最新回复，则显示下面内容-->
+            <div class="media" th:each="notification : ${paginationDTO.data}" th:if="${section.equals('replies')}">
+                <div class="media-body">
+                    <p class="media-heading">
+                        <span th:text="${notification.replier +' ' + notification.notificationType + ' '}"></span>
+                        <a th:href="@{'/notification/'+ ${notification.id}}"
+                           th:text="${notification.questionTitle}">
+                        </a>
+                        <span class="label label-danger" th:if="${notification.notificationStatus.equals('未读')}"
+                              th:text="${notification.notificationStatus}"></span>
+                    </p>
+                </div>
+            </div>
+
+
             <nav aria-label="Page navigation">
                 <ul class="pagination">
                     <li th:if="${paginationDTO.firstPage}">
@@ -82,6 +99,7 @@
                 <a href="/profile/replies" class="list-group-item active"
                    th:class="${section.equals('replies')} ? 'list-group-item active':'list-group-item'">
                     最新回复
+                    <span class="badge" th:text="${session.notificationNumber}"></span>
                 </a>
             </div>
         </div>

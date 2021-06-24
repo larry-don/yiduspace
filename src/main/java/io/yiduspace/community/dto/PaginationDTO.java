@@ -5,8 +5,8 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class PaginationDTO {
-    private List<QuestionDTO> questionDTOS;//问题列表
+public class PaginationDTO<T> {
+    private List<T> data;//问题列表
     private boolean firstPage;//首页
     private boolean prePage;//上一页
     private boolean endPage;//尾页

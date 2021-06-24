@@ -42,7 +42,7 @@ public class ProfileController {
         }
 
         Long id = user.getId();
-        PaginationDTO paginationDTO = questionService.getPaginationDTO(currentPage,pageSize, id);
+        PaginationDTO paginationDTO = questionService.getPaginationDTO(currentPage,pageSize, id, action);
         model.addAttribute("paginationDTO",paginationDTO);
         return "profile";
     }

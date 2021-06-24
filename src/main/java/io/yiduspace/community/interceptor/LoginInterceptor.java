@@ -1,6 +1,9 @@
 package io.yiduspace.community.interceptor;
 
+import io.yiduspace.community.enums.NotificationStatusEnum;
+import io.yiduspace.community.mapper.NotificationMapper;
 import io.yiduspace.community.mapper.UserMapper;
+import io.yiduspace.community.model.NotificationExample;
 import io.yiduspace.community.model.User;
 import io.yiduspace.community.model.UserExample;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,19 +21,27 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private NotificationMapper notificationMapper;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         Cookie[] cookies = request.getCookies();
-        if (cookies != null && cookies.length != 0){
+        if (cookies != null && cookies.length != 0) {
             for (Cookie cookie : cookies) {
-                if(cookie.getName().equals("token")){
+                if (cookie.getName().equals("token")) {
                     String token = cookie.getValue();
                     UserExample example = new UserExample();
                     example.createCriteria().andTokenEqualTo(token);
                     List<User> list = userMapper.selectByExample(example);
-                    if(list.size() != 0){
-                        request.getSession().setAttribute("user",list.get(0));
+                    if (list.size() != 0) {
+                        request.getSession().setAttribute("user", list.get(0));
+                        NotificationExample example1 = new NotificationExample();
+                        example1.createCriteria().andRecipientEqualTo(list.get(0).getId())
+                                .andNotificationStatusEqualTo(NotificationStatusEnum.UNREAD
+                                        .getStatusId());
+                        long notificationNumber = notificationMapper.countByExample(example1);
+                        request.getSession().setAttribute("notificationNumber", notificationNumber);
                     }
                     break;
                 }
